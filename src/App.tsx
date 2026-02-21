@@ -5,6 +5,7 @@ import Info from './components/Info';
 import Location from './components/Location';
 import Toast from './components/Toast';
 import { inviteConfig } from './config';
+import Gallery from "./components/Gallery"
 
 function App() {
   const [imageError, setImageError] = useState(false);
@@ -30,6 +31,7 @@ function App() {
       <main className="space-y-4">
         <Hero imageError={imageError} />
         <Info onCopyAddress={handleCopyAddress} />
+	<Gallery photos={inviteConfig.photos} />
         <Location />
       </main>
       <div className="pt-4">
@@ -39,5 +41,6 @@ function App() {
     </div>
   );
 }
+
 
 export default App;

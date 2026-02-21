@@ -25,7 +25,7 @@ function Info({ onCopyAddress }: InfoProps) {
           rel="noreferrer"
           className="rounded-full border border-rosewood/40 px-3 py-2 text-center text-xs text-rosewood"
         >
-          Open Kakao Map
+          Open Naver Map
         </a>
         <button
           type="button"
