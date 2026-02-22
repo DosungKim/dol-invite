@@ -132,8 +132,6 @@ API 형식:
 또한 현재 입력한 `viewerId`가 `VITE_GUESTBOOK_ADMIN_ID`와 일치하면 모든 글에 수정/삭제 버튼을 노출합니다.
 
 > 보안 주의: 버튼 노출 제어는 UX 편의용입니다. 실제 권한 검증(작성자/운영자)은 백엔드에서 반드시 검증해야 합니다.
-<<<<<<< HEAD
-=======
 
 ## 8) 내장 백엔드 API 실행 방법
 
@@ -164,4 +162,3 @@ VITE_GUESTBOOK_ADMIN_ID=admin-001
 - `POST /guestbook`: `viewerId` body와 `x-viewer-id` 헤더가 모두 필요하고 서로 같아야 생성됩니다.
 - `PATCH/DELETE /guestbook/:id`: 작성자(`viewerId` 일치) 또는 운영자(`GUESTBOOK_ADMIN_ID` 일치)만 허용됩니다.
 
->>>>>>> fcb557684a0b477c0d83fd48d6e7f03e3dab2d68

@@ -24,6 +24,9 @@ function Guestbook({ onSubmit }: GuestbookProps) {
   const [viewerId, setViewerId] = useState(() => window.localStorage.getItem(VIEWER_ID_KEY) ?? '');
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [feedbackTone, setFeedbackTone] = useState<'success' | 'error' | null>(null);
   const [ownedEntriesMap, setOwnedEntriesMap] = useState<OwnedEntriesMap>(() => {
     try {
       const raw = window.localStorage.getItem(OWNED_ENTRY_IDS_KEY);
@@ -51,7 +54,8 @@ function Guestbook({ onSubmit }: GuestbookProps) {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editingMessage, setEditingMessage] = useState('');
 
-  const isApiConfigured = useMemo(() => Boolean(GUESTBOOK_API_BASE_URL), []);
+  const apiBaseUrl = useMemo(() => GUESTBOOK_API_BASE_URL?.trim().replace(/\/+$/, '') ?? '', []);
+  const isApiConfigured = useMemo(() => Boolean(apiBaseUrl), [apiBaseUrl]);
   const isAdminViewer = useMemo(
     () => Boolean(GUESTBOOK_ADMIN_ID) && viewerId.trim() === GUESTBOOK_ADMIN_ID,
     [viewerId],
@@ -65,6 +69,29 @@ function Guestbook({ onSubmit }: GuestbookProps) {
     window.localStorage.setItem(VIEWER_ID_KEY, viewerId);
   }, [viewerId]);
 
+  const setErrorFeedback = (messageText: string) => {
+    setFeedbackTone('error');
+    setFeedbackMessage(messageText);
+  };
+
+  const setSuccessFeedback = (messageText: string) => {
+    setFeedbackTone('success');
+    setFeedbackMessage(messageText);
+  };
+
+  const parseErrorMessage = async (response: Response, fallback: string) => {
+    try {
+      const parsed = (await response.json()) as { error?: string };
+      if (typeof parsed.error === 'string' && parsed.error.length > 0) {
+        return `${fallback} (${parsed.error})`;
+      }
+    } catch {
+      return fallback;
+    }
+
+    return fallback;
+  };
+
   const loadEntries = async () => {
     if (!isApiConfigured) {
       setEntries([]);
@@ -74,9 +101,9 @@ function Guestbook({ onSubmit }: GuestbookProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${GUESTBOOK_API_BASE_URL}/guestbook`);
+      const response = await fetch(`${apiBaseUrl}/guestbook`);
       if (!response.ok) {
-        throw new Error('failed to fetch guestbook entries');
+        throw new Error(await parseErrorMessage(response, '방명록을 불러오지 못했습니다'));
       }
 
       const data: unknown = await response.json();
@@ -97,6 +124,7 @@ function Guestbook({ onSubmit }: GuestbookProps) {
       setEntries(validEntries);
     } catch {
       setEntries([]);
+      setErrorFeedback('방명록 서버에 연결할 수 없습니다. API 주소/서버 상태를 확인해 주세요.');
     } finally {
       setIsLoading(false);
     }
@@ -112,12 +140,28 @@ function Guestbook({ onSubmit }: GuestbookProps) {
     const trimmedName = name.trim();
     const trimmedMessage = message.trim();
     const trimmedViewerId = viewerId.trim();
-    if (!trimmedName || !trimmedMessage || !trimmedViewerId || !isApiConfigured) {
+
+    if (!isApiConfigured) {
+      setErrorFeedback('API 주소가 설정되지 않아 저장할 수 없습니다.');
       return;
     }
 
+    if (!trimmedViewerId) {
+      setErrorFeedback('사용자 ID를 입력해 주세요.');
+      return;
+    }
+
+    if (!trimmedName || !trimmedMessage) {
+      setErrorFeedback('이름과 메시지를 모두 입력해 주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFeedbackMessage(null);
+    setFeedbackTone(null);
+
     try {
-      const response = await fetch(`${GUESTBOOK_API_BASE_URL}/guestbook`, {
+      const response = await fetch(`${apiBaseUrl}/guestbook`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +175,7 @@ function Guestbook({ onSubmit }: GuestbookProps) {
       });
 
       if (!response.ok) {
-        throw new Error('failed to save guestbook entry');
+        throw new Error(await parseErrorMessage(response, '방명록 저장에 실패했습니다'));
       }
 
       const created = (await response.json()) as Partial<GuestbookEntry> | null;
@@ -144,18 +188,22 @@ function Guestbook({ onSubmit }: GuestbookProps) {
       onSubmit({ name: trimmedName, message: trimmedMessage });
       setName('');
       setMessage('');
-    } catch {
-      // 실패 시 조용히 유지
+      setSuccessFeedback('방명록이 등록되었습니다.');
+    } catch (error) {
+      setErrorFeedback(error instanceof Error ? error.message : '방명록 저장에 실패했습니다.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (entryId: string) => {
     if (!isApiConfigured) {
+      setErrorFeedback('API 주소가 설정되지 않아 삭제할 수 없습니다.');
       return;
     }
 
     try {
-      const response = await fetch(`${GUESTBOOK_API_BASE_URL}/guestbook/${entryId}`, {
+      const response = await fetch(`${apiBaseUrl}/guestbook/${entryId}`, {
         method: 'DELETE',
         headers: {
           'x-viewer-id': viewerId.trim(),
@@ -163,7 +211,7 @@ function Guestbook({ onSubmit }: GuestbookProps) {
       });
 
       if (!response.ok) {
-        throw new Error('failed to delete guestbook entry');
+        throw new Error(await parseErrorMessage(response, '삭제에 실패했습니다'));
       }
 
       setOwnedEntriesMap((prev) => {
@@ -173,8 +221,9 @@ function Guestbook({ onSubmit }: GuestbookProps) {
       });
       setEditingEntryId((prev) => (prev === entryId ? null : prev));
       await loadEntries();
-    } catch {
-      // 실패 시 조용히 유지
+      setSuccessFeedback('방명록을 삭제했습니다.');
+    } catch (error) {
+      setErrorFeedback(error instanceof Error ? error.message : '삭제에 실패했습니다.');
     }
   };
 
@@ -190,11 +239,12 @@ function Guestbook({ onSubmit }: GuestbookProps) {
   const handleEditSave = async (entryId: string) => {
     const trimmed = editingMessage.trim();
     if (!trimmed || !isApiConfigured) {
+      setErrorFeedback('수정할 내용을 입력해 주세요.');
       return;
     }
 
     try {
-      const response = await fetch(`${GUESTBOOK_API_BASE_URL}/guestbook/${entryId}`, {
+      const response = await fetch(`${apiBaseUrl}/guestbook/${entryId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -204,14 +254,15 @@ function Guestbook({ onSubmit }: GuestbookProps) {
       });
 
       if (!response.ok) {
-        throw new Error('failed to update guestbook entry');
+        throw new Error(await parseErrorMessage(response, '수정에 실패했습니다'));
       }
 
       setEditingEntryId(null);
       setEditingMessage('');
       await loadEntries();
-    } catch {
-      // 실패 시 조용히 유지
+      setSuccessFeedback('방명록을 수정했습니다.');
+    } catch (error) {
+      setErrorFeedback(error instanceof Error ? error.message : '수정에 실패했습니다.');
     }
   };
 
@@ -222,6 +273,18 @@ function Guestbook({ onSubmit }: GuestbookProps) {
       {!isApiConfigured ? (
         <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
           공유 방명록을 사용하려면 <code>VITE_GUESTBOOK_API_BASE_URL</code> 환경 변수를 설정해 주세요.
+        </p>
+      ) : null}
+
+      {feedbackMessage ? (
+        <p
+          className={`mt-3 rounded-xl border px-3 py-2 text-xs ${
+            feedbackTone === 'success'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+              : 'border-amber-200 bg-amber-50 text-amber-900'
+          }`}
+        >
+          {feedbackMessage}
         </p>
       ) : null}
 
@@ -261,10 +324,10 @@ function Guestbook({ onSubmit }: GuestbookProps) {
 
         <button
           type="submit"
-          disabled={!isApiConfigured}
+          disabled={!isApiConfigured || isSubmitting}
           className="w-full rounded-full bg-rosewood py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          방명록 남기기
+          {isSubmitting ? '등록 중...' : '방명록 남기기'}
         </button>
       </form>
 
