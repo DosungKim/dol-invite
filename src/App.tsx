@@ -13,7 +13,7 @@ function App() {
   const [imageError, setImageError] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -78,7 +78,7 @@ function App() {
         <Hero imageError={imageError} />
         <Info onCopyAddress={handleCopyAddress} />
         <Location />
-        <Gallery onSelectImage={setSelectedImage} />
+        <Gallery onSelectImage={setSelectedImageIndex} />
         <Guestbook onSubmit={handleSubmitGuestbook} />
       </main>
 
@@ -87,7 +87,24 @@ function App() {
       </div>
 
       <Toast message={toastMessage} visible={toastVisible} />
-      {selectedImage ? <ImageModal src={selectedImage} onClose={() => setSelectedImage(null)} /> : null}
+      {selectedImageIndex !== null ? (
+        <ImageModal
+          src={inviteConfig.galleryImages[selectedImageIndex]}
+          onClose={() => setSelectedImageIndex(null)}
+          onPrev={() =>
+            setSelectedImageIndex((prev) =>
+              prev === null
+                ? 0
+                : (prev - 1 + inviteConfig.galleryImages.length) % inviteConfig.galleryImages.length,
+            )
+          }
+          onNext={() =>
+            setSelectedImageIndex((prev) =>
+              prev === null ? 0 : (prev + 1) % inviteConfig.galleryImages.length,
+            )
+          }
+        />
+      ) : null}
     </div>
   );
 }

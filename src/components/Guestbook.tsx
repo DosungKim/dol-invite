@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 
 type GuestbookEntry = {
   name: string;
@@ -10,10 +10,39 @@ type GuestbookProps = {
   onSubmit: (payload: { name: string; message: string }) => void;
 };
 
+const GUESTBOOK_STORAGE_KEY = 'dol-invite-guestbook-entries';
+
 function Guestbook({ onSubmit }: GuestbookProps) {
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
-  const [entries, setEntries] = useState<GuestbookEntry[]>([]);
+  const [entries, setEntries] = useState<GuestbookEntry[]>(() => {
+    const saved = window.localStorage.getItem(GUESTBOOK_STORAGE_KEY);
+
+    if (!saved) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(saved);
+
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (entry): entry is GuestbookEntry =>
+            typeof entry?.name === 'string' &&
+            typeof entry?.message === 'string' &&
+            typeof entry?.createdAt === 'string',
+        );
+      }
+    } catch {
+      return [];
+    }
+
+    return [];
+  });
+
+  useEffect(() => {
+    window.localStorage.setItem(GUESTBOOK_STORAGE_KEY, JSON.stringify(entries));
+  }, [entries]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
