@@ -110,3 +110,19 @@ sudo systemctl reload nginx
 ```bash
 sudo systemctl restart nginx
 ```
+
+## 7) 공유 방명록 API 연동
+
+기본 프론트엔드는 정적 앱이므로, 방문자끼리 방명록을 공유하려면 별도 API가 필요합니다.
+
+`.env` 파일에 아래 값을 설정하세요.
+
+```bash
+VITE_GUESTBOOK_API_BASE_URL=https://your-api.example.com
+```
+
+API 형식:
+- `GET /guestbook` -> `[{ id?: string, name: string, message: string, createdAt: string }]`
+- `POST /guestbook` body: `{ name: string, message: string }`
+
+프론트는 위 규격으로 목록을 읽고, 작성 후 다시 목록을 갱신합니다.
