@@ -110,3 +110,55 @@ sudo systemctl reload nginx
 ```bash
 sudo systemctl restart nginx
 ```
+
+## 7) 공유 방명록 API 연동
+
+기본 프론트엔드는 정적 앱이므로, 방문자끼리 방명록을 공유하려면 별도 API가 필요합니다.
+
+`.env` 파일에 아래 값을 설정하세요.
+
+```bash
+VITE_GUESTBOOK_API_BASE_URL=https://your-api.example.com
+VITE_GUESTBOOK_ADMIN_ID=admin-001
+```
+
+API 형식:
+- `GET /guestbook` -> `[{ id?: string, name: string, message: string, createdAt: string }]`
+- `POST /guestbook` body: `{ name: string, message: string, viewerId: string }` (`x-viewer-id` 헤더도 함께 전달) -> 생성된 엔트리(`id` 포함 권장) 반환
+- `PATCH /guestbook/:id` body: `{ message: string }` (`x-viewer-id` 헤더 전달)
+- `DELETE /guestbook/:id` (`x-viewer-id` 헤더 전달)
+
+프론트는 작성 성공 시 응답의 `id`를 브라우저 로컬에 저장해, 해당 방문자가 작성한 글에 수정/삭제 버튼을 노출합니다.
+또한 현재 입력한 `viewerId`가 `VITE_GUESTBOOK_ADMIN_ID`와 일치하면 모든 글에 수정/삭제 버튼을 노출합니다.
+
+> 보안 주의: 버튼 노출 제어는 UX 편의용입니다. 실제 권한 검증(작성자/운영자)은 백엔드에서 반드시 검증해야 합니다.
+
+## 8) 내장 백엔드 API 실행 방법
+
+백엔드가 아직 없다면, 이 저장소에 포함된 간단한 Node.js API를 바로 사용할 수 있습니다.
+
+```bash
+npm run dev:api
+```
+
+기본값:
+- API 주소: `http://localhost:4000`
+- 데이터 저장 파일: `data/guestbook.json`
+
+프론트 `.env` 예시:
+
+```bash
+VITE_GUESTBOOK_API_BASE_URL=http://localhost:4000
+VITE_GUESTBOOK_ADMIN_ID=admin-001
+```
+
+백엔드 환경 변수(선택):
+- `PORT` (기본 `4000`)
+- `GUESTBOOK_ADMIN_ID` (운영자 ID, 없으면 `VITE_GUESTBOOK_ADMIN_ID`도 fallback으로 사용)
+- `GUESTBOOK_DATA_FILE` (저장 파일 경로, 기본 `data/guestbook.json`)
+- `CORS_ALLOW_ORIGIN` (기본 `*`)
+
+### API 권한 규칙
+- `POST /guestbook`: `viewerId` body와 `x-viewer-id` 헤더가 모두 필요하고 서로 같아야 생성됩니다.
+- `PATCH/DELETE /guestbook/:id`: 작성자(`viewerId` 일치) 또는 운영자(`GUESTBOOK_ADMIN_ID` 일치)만 허용됩니다.
+

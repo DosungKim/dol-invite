@@ -1,7 +1,7 @@
 import { inviteConfig } from '../config';
 
 type GalleryProps = {
-  onSelectImage: (src: string) => void;
+  onSelectImage: (index: number) => void;
 };
 
 function Gallery({ onSelectImage }: GalleryProps) {
@@ -14,7 +14,7 @@ function Gallery({ onSelectImage }: GalleryProps) {
           <button
             key={src}
             type="button"
-            onClick={() => onSelectImage(src)}
+            onClick={() => onSelectImage(index)}
             className="overflow-hidden rounded-xl border border-rosewood/15 focus:outline-none focus:ring-2 focus:ring-rosewood/40"
             aria-label={`갤러리 이미지 ${index + 1} 확대`}
           >
