@@ -16,6 +16,7 @@ function Hero({ imageError }: HeroProps) {
           <img src="/baby.jpg" alt="아기 사진" className="h-64 w-full object-cover" />
         )}
       </div>
+
       <p className="text-center font-serif text-4xl text-rosewood">{inviteConfig.babyName}의 돌잔치</p>
       <p className="mt-4 whitespace-pre-line text-center text-sm leading-relaxed text-rosewood/80">{inviteConfig.message}</p>
       <p className="mt-5 border-t border-rosewood/20 pt-4 text-center text-sm text-rosewood/80">

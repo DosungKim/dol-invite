@@ -24,6 +24,12 @@ body {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise {
+    animation: none !important;
+  }
+}
+
 @keyframes rise {
   from {
     opacity: 0;

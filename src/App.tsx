@@ -9,6 +9,12 @@ import Rsvp from './components/Rsvp';
 import Toast from './components/Toast';
 import { inviteConfig } from './config';
 
+type RsvpPayload = {
+  name: string;
+  attendance: 'yes' | 'no';
+  guests: number;
+};
+
 function App() {
   const [imageError, setImageError] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
@@ -49,7 +55,7 @@ function App() {
     }
   };
 
-  const handleSubmitRsvp = (payload: { name: string; attendance: 'yes' | 'no'; guests: number }) => {
+  const handleSubmitRsvp = (payload: RsvpPayload) => {
     console.log('RSVP:', payload);
     showToast('참석 의사를 전달했어요.');
   };
@@ -68,7 +74,7 @@ function App() {
       await navigator.clipboard.writeText(window.location.href);
       showToast('링크가 복사되었어요.');
     } catch {
-      // 사용자가 공유창을 닫는 경우가 많아 불필요한 에러 토스트는 보여주지 않습니다.
+      // 사용자가 공유를 취소하는 경우도 많아 조용히 종료합니다.
     }
   };
 
@@ -81,9 +87,11 @@ function App() {
         <Gallery onSelectImage={setSelectedImage} />
         <Rsvp onSubmit={handleSubmitRsvp} />
       </main>
+
       <div className="pt-4">
         <Footer onShare={handleShare} />
       </div>
+
       <Toast message={toastMessage} visible={toastVisible} />
       {selectedImage ? <ImageModal src={selectedImage} onClose={() => setSelectedImage(null)} /> : null}
     </div>
