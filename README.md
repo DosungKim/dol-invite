@@ -2,6 +2,15 @@
 
 심플하고 감성적인 모바일 퍼스트 돌잔치 초대장 단일 페이지입니다.
 
+## 주요 구성
+
+- Hero 카드 (아기 사진 + 이름 + 메시지 + 일시)
+- Invitation Info 카드 (장소/주소 + 카카오맵 열기 + 주소 복사)
+- Location 카드 (정적 지도 플레이스홀더)
+- Gallery 6컷 + 클릭 확대 모달
+- RSVP 폼 (콘솔 로그)
+- Footer 연락처 + 링크 공유 버튼(Web Share/복사 fallback)
+
 ## 1) 실행 방법
 
 ```bash
@@ -27,7 +36,7 @@ npm run preview
 
 ## 3) 내용 수정 위치
 
-초대장 문구/날짜/장소/연락처/지도 링크는 `src/config.ts`에서 수정합니다.
+초대장 문구/날짜/장소/연락처/지도 링크/갤러리 이미지는 `src/config.ts`에서 수정합니다.
 
 - `babyName`
 - `message`
@@ -36,15 +45,25 @@ npm run preview
 - `address`
 - `kakaoMapUrl`
 - `contacts`
+- `galleryImages`
 
-## 4) 아기 사진 교체
+## 4) 이미지 교체
 
-`/public/baby.jpg` 파일을 원하는 사진으로 교체하세요.
+- 아기 대표 사진: `/public/baby.jpg`
+- 갤러리 이미지: `/public/gallery-1.svg` ... `/public/gallery-6.svg` (원하는 파일로 교체 가능)
 
-- 파일명이 정확히 `baby.jpg`여야 합니다.
-- 파일이 없으면 화면에 안내 플레이스홀더가 표시됩니다.
+`baby.jpg`가 없으면 Hero에 안내 플레이스홀더가 표시됩니다.
 
-## 5) 소형 VM + Nginx 배포 예시
+## 5) PR 충돌(conflict) 빠른 점검
+
+```bash
+npm run check:conflicts
+```
+
+- `README.md`, `src/` 내 `<<<<<<<`, `=======`, `>>>>>>>` 마커를 바로 확인합니다.
+- 개인 정보는 `src/config.ts`에서만 수정하는 것을 권장합니다.
+
+## 6) 소형 VM + Nginx 배포 예시
 
 ### (A) 앱 빌드 후 서버로 복사
 

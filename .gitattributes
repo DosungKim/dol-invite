@@ -1,0 +1,8 @@
+# Keep personal invitation content stable during merges
+src/config.ts merge=ours
+
+# Normalize line endings to avoid noisy diffs
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.md text eol=lf
