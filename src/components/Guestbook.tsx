@@ -12,13 +12,16 @@ type GuestbookProps = {
 };
 
 const GUESTBOOK_API_BASE_URL = import.meta.env.VITE_GUESTBOOK_API_BASE_URL;
+const GUESTBOOK_ADMIN_ID = import.meta.env.VITE_GUESTBOOK_ADMIN_ID;
 const OWNED_ENTRY_IDS_KEY = 'dol-invite-owned-guestbook-ids';
+const VIEWER_ID_KEY = 'dol-invite-viewer-id';
 
 type OwnedEntriesMap = Record<string, true>;
 
 function Guestbook({ onSubmit }: GuestbookProps) {
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
+  const [viewerId, setViewerId] = useState(() => window.localStorage.getItem(VIEWER_ID_KEY) ?? '');
   const [entries, setEntries] = useState<GuestbookEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [ownedEntriesMap, setOwnedEntriesMap] = useState<OwnedEntriesMap>(() => {
@@ -49,10 +52,18 @@ function Guestbook({ onSubmit }: GuestbookProps) {
   const [editingMessage, setEditingMessage] = useState('');
 
   const isApiConfigured = useMemo(() => Boolean(GUESTBOOK_API_BASE_URL), []);
+  const isAdminViewer = useMemo(
+    () => Boolean(GUESTBOOK_ADMIN_ID) && viewerId.trim() === GUESTBOOK_ADMIN_ID,
+    [viewerId],
+  );
 
   useEffect(() => {
     window.localStorage.setItem(OWNED_ENTRY_IDS_KEY, JSON.stringify(ownedEntriesMap));
   }, [ownedEntriesMap]);
+
+  useEffect(() => {
+    window.localStorage.setItem(VIEWER_ID_KEY, viewerId);
+  }, [viewerId]);
 
   const loadEntries = async () => {
     if (!isApiConfigured) {
@@ -100,7 +111,8 @@ function Guestbook({ onSubmit }: GuestbookProps) {
 
     const trimmedName = name.trim();
     const trimmedMessage = message.trim();
-    if (!trimmedName || !trimmedMessage || !isApiConfigured) {
+    const trimmedViewerId = viewerId.trim();
+    if (!trimmedName || !trimmedMessage || !trimmedViewerId || !isApiConfigured) {
       return;
     }
 
@@ -109,10 +121,12 @@ function Guestbook({ onSubmit }: GuestbookProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-viewer-id': trimmedViewerId,
         },
         body: JSON.stringify({
           name: trimmedName,
           message: trimmedMessage,
+          viewerId: trimmedViewerId,
         }),
       });
 
@@ -122,7 +136,8 @@ function Guestbook({ onSubmit }: GuestbookProps) {
 
       const created = (await response.json()) as Partial<GuestbookEntry> | null;
       if (created?.id && typeof created.id === 'string') {
-        setOwnedEntriesMap((prev) => ({ ...prev, [created.id as string]: true }));
+        const createdId = created.id;
+        setOwnedEntriesMap((prev) => ({ ...prev, [createdId]: true }));
       }
 
       await loadEntries();
@@ -142,6 +157,9 @@ function Guestbook({ onSubmit }: GuestbookProps) {
     try {
       const response = await fetch(`${GUESTBOOK_API_BASE_URL}/guestbook/${entryId}`, {
         method: 'DELETE',
+        headers: {
+          'x-viewer-id': viewerId.trim(),
+        },
       });
 
       if (!response.ok) {
@@ -180,6 +198,7 @@ function Guestbook({ onSubmit }: GuestbookProps) {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'x-viewer-id': viewerId.trim(),
         },
         body: JSON.stringify({ message: trimmed }),
       });
@@ -207,6 +226,17 @@ function Guestbook({ onSubmit }: GuestbookProps) {
       ) : null}
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+        <label className="block text-sm text-rosewood/90">
+          사용자 ID
+          <input
+            className="mt-1 w-full rounded-xl border border-rosewood/20 bg-white px-3 py-2 text-sm"
+            value={viewerId}
+            onChange={(event) => setViewerId(event.target.value)}
+            placeholder="본인 식별 ID를 입력해 주세요"
+            required
+          />
+        </label>
+
         <label className="block text-sm text-rosewood/90">
           이름
           <input
@@ -244,21 +274,23 @@ function Guestbook({ onSubmit }: GuestbookProps) {
         <ul className="mt-4 space-y-2">
           {entries.map((entry, index) => {
             const entryId = entry.id ?? `${entry.createdAt}-${entry.name}-${index}`;
-            const isOwned = entry.id ? ownedEntriesMap[entry.id] === true : false;
-            const isEditing = entry.id ? editingEntryId === entry.id : false;
+            const entryIdValue = entry.id;
+            const isOwned = entryIdValue ? ownedEntriesMap[entryIdValue] === true : false;
+            const canManage = isOwned || isAdminViewer;
+            const isEditing = entryIdValue ? editingEntryId === entryIdValue : false;
 
             return (
               <li key={entryId} className="rounded-xl border border-rosewood/15 bg-white/70 p-3">
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-sm font-medium text-rosewood">{entry.name}</p>
-                  {isOwned && entry.id ? (
+                  {canManage && entryIdValue ? (
                     <div className="flex items-center gap-2">
                       {isEditing ? (
                         <>
                           <button
                             type="button"
                             className="text-xs font-medium text-rosewood/80"
-                            onClick={() => handleEditSave(entry.id as string)}
+                            onClick={() => handleEditSave(entryIdValue)}
                           >
                             저장
                           </button>
@@ -285,7 +317,7 @@ function Guestbook({ onSubmit }: GuestbookProps) {
                           <button
                             type="button"
                             className="text-xs font-medium text-rosewood/60"
-                            onClick={() => handleDelete(entry.id as string)}
+                            onClick={() => handleDelete(entryIdValue)}
                           >
                             삭제
                           </button>
