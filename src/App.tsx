@@ -1,19 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import Footer from './components/Footer';
 import Gallery from './components/Gallery';
+import Guestbook from './components/Guestbook';
 import Hero from './components/Hero';
 import ImageModal from './components/ImageModal';
 import Info from './components/Info';
 import Location from './components/Location';
-import Rsvp from './components/Rsvp';
 import Toast from './components/Toast';
 import { inviteConfig } from './config';
-
-type RsvpPayload = {
-  name: string;
-  attendance: 'yes' | 'no';
-  guests: number;
-};
 
 function App() {
   const [imageError, setImageError] = useState(false);
@@ -55,9 +49,9 @@ function App() {
     }
   };
 
-  const handleSubmitRsvp = (payload: RsvpPayload) => {
-    console.log('RSVP:', payload);
-    showToast('참석 의사를 전달했어요.');
+  const handleSubmitGuestbook = (payload: { name: string; message: string }) => {
+    console.log('GUESTBOOK:', payload);
+    showToast('방명록이 등록되었어요.');
   };
 
   const handleShare = async () => {
@@ -85,7 +79,7 @@ function App() {
         <Info onCopyAddress={handleCopyAddress} />
         <Location />
         <Gallery onSelectImage={setSelectedImage} />
-        <Rsvp onSubmit={handleSubmitRsvp} />
+        <Guestbook onSubmit={handleSubmitGuestbook} />
       </main>
 
       <div className="pt-4">

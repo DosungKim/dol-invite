@@ -8,7 +8,7 @@
 - Invitation Info 카드 (장소/주소 + 카카오맵 열기 + 주소 복사)
 - Location 카드 (정적 지도 플레이스홀더)
 - Gallery 6컷 + 클릭 확대 모달
-- RSVP 폼 (콘솔 로그)
+- 방명록 (이름 + 메시지, 화면 목록 표시 + 콘솔 로그)
 - Footer 연락처 + 링크 공유 버튼(Web Share/복사 fallback)
 
 ## 1) 실행 방법
