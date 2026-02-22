@@ -54,7 +54,16 @@ npm run preview
 
 `baby.jpg`가 없으면 Hero에 안내 플레이스홀더가 표시됩니다.
 
-## 5) 소형 VM + Nginx 배포 예시
+## 5) PR 충돌(conflict) 빠른 점검
+
+```bash
+npm run check:conflicts
+```
+
+- `README.md`, `src/` 내 `<<<<<<<`, `=======`, `>>>>>>>` 마커를 바로 확인합니다.
+- 개인 정보는 `src/config.ts`에서만 수정하는 것을 권장합니다.
+
+## 6) 소형 VM + Nginx 배포 예시
 
 ### (A) 앱 빌드 후 서버로 복사
 
