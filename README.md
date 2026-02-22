@@ -110,3 +110,25 @@ sudo systemctl reload nginx
 ```bash
 sudo systemctl restart nginx
 ```
+
+## 7) 공유 방명록 API 연동
+
+기본 프론트엔드는 정적 앱이므로, 방문자끼리 방명록을 공유하려면 별도 API가 필요합니다.
+
+`.env` 파일에 아래 값을 설정하세요.
+
+```bash
+VITE_GUESTBOOK_API_BASE_URL=https://your-api.example.com
+VITE_GUESTBOOK_ADMIN_ID=admin-001
+```
+
+API 형식:
+- `GET /guestbook` -> `[{ id?: string, name: string, message: string, createdAt: string }]`
+- `POST /guestbook` body: `{ name: string, message: string, viewerId: string }` (`x-viewer-id` 헤더도 함께 전달) -> 생성된 엔트리(`id` 포함 권장) 반환
+- `PATCH /guestbook/:id` body: `{ message: string }` (`x-viewer-id` 헤더 전달)
+- `DELETE /guestbook/:id` (`x-viewer-id` 헤더 전달)
+
+프론트는 작성 성공 시 응답의 `id`를 브라우저 로컬에 저장해, 해당 방문자가 작성한 글에 수정/삭제 버튼을 노출합니다.
+또한 현재 입력한 `viewerId`가 `VITE_GUESTBOOK_ADMIN_ID`와 일치하면 모든 글에 수정/삭제 버튼을 노출합니다.
+
+> 보안 주의: 버튼 노출 제어는 UX 편의용입니다. 실제 권한 검증(작성자/운영자)은 백엔드에서 반드시 검증해야 합니다.
