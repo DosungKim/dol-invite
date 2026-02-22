@@ -123,6 +123,10 @@ VITE_GUESTBOOK_API_BASE_URL=https://your-api.example.com
 
 API 형식:
 - `GET /guestbook` -> `[{ id?: string, name: string, message: string, createdAt: string }]`
-- `POST /guestbook` body: `{ name: string, message: string }`
+- `POST /guestbook` body: `{ name: string, message: string }` -> 생성된 엔트리(`id` 포함 권장) 반환
+- `PATCH /guestbook/:id` body: `{ message: string }`
+- `DELETE /guestbook/:id`
 
-프론트는 위 규격으로 목록을 읽고, 작성 후 다시 목록을 갱신합니다.
+프론트는 작성 성공 시 응답의 `id`를 브라우저 로컬에 저장해, 해당 방문자가 작성한 글에만 수정/삭제 버튼을 노출합니다.
+
+> 보안 주의: 버튼 노출 제어는 UX 편의용입니다. 실제 권한 검증(작성자만 수정/삭제)은 백엔드에서 반드시 검증해야 합니다.
