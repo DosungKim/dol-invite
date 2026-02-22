@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Footer from './components/Footer';
 import Gallery from './components/Gallery';
 import Hero from './components/Hero';
@@ -14,6 +14,7 @@ function App() {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const image = new Image();
@@ -21,10 +22,22 @@ function App() {
     image.onerror = () => setImageError(true);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
   const showToast = (message: string) => {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+
     setToastMessage(message);
     setToastVisible(true);
-    window.setTimeout(() => setToastVisible(false), 1800);
+    toastTimerRef.current = window.setTimeout(() => setToastVisible(false), 1800);
   };
 
   const handleCopyAddress = async () => {
@@ -55,7 +68,7 @@ function App() {
       await navigator.clipboard.writeText(window.location.href);
       showToast('링크가 복사되었어요.');
     } catch {
-      showToast('공유를 취소했거나 지원되지 않아요.');
+      // 사용자가 공유창을 닫는 경우가 많아 불필요한 에러 토스트는 보여주지 않습니다.
     }
   };
 
