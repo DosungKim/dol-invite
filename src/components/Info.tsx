@@ -34,7 +34,7 @@ function Info({ onCopyAddress }: InfoProps) {
           onClick={onCopyAddress}
           className="rounded-full bg-rosewood px-3 py-2 text-xs text-white"
         >
-          초대장 주소 복사하기
+          주소 복사하기
         </button>
       </div>
     </section>

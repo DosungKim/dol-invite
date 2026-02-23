@@ -17,7 +17,7 @@ function Hero({ imageError }: HeroProps) {
         )}
       </div>
 
-      <p className="text-center font-serif text-4xl text-rosewood">{inviteConfig.babyName}가 뭘 잡게 될까요?</p>
+      <p className="text-center font-serif text-4xl text-rosewood">하나,둘,셋 <br />{inviteConfig.babyName}야~ 잡아라~</p>
       <p className="mt-4 whitespace-pre-line text-center text-lg leading-relaxed text-rosewood/80">{inviteConfig.message}</p>
       <p className="mt-5 border-t border-rosewood/20 pt-4 text-center text-sm text-rosewood/80">
         {inviteConfig.eventDateTime}
