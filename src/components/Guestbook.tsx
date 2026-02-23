@@ -15,6 +15,7 @@ const GUESTBOOK_API_BASE_URL = import.meta.env.VITE_GUESTBOOK_API_BASE_URL;
 const GUESTBOOK_ADMIN_ID = import.meta.env.VITE_GUESTBOOK_ADMIN_ID;
 const OWNED_ENTRY_IDS_KEY = 'dol-invite-owned-guestbook-ids';
 const VIEWER_ID_KEY = 'dol-invite-viewer-id';
+const LOCAL_ENTRIES_KEY = 'dol-invite-local-guestbook-entries';
 
 type OwnedEntriesMap = Record<string, true>;
 
@@ -92,9 +93,40 @@ function Guestbook({ onSubmit }: GuestbookProps) {
     return fallback;
   };
 
+  const loadLocalEntries = () => {
+    try {
+      const raw = window.localStorage.getItem(LOCAL_ENTRIES_KEY);
+      if (!raw) {
+        return [] as GuestbookEntry[];
+      }
+
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) {
+        return [] as GuestbookEntry[];
+      }
+
+      return parsed.filter(
+        (entry): entry is GuestbookEntry =>
+          typeof entry === 'object' &&
+          entry !== null &&
+          typeof (entry as GuestbookEntry).id === 'string' &&
+          typeof (entry as GuestbookEntry).name === 'string' &&
+          typeof (entry as GuestbookEntry).message === 'string' &&
+          typeof (entry as GuestbookEntry).createdAt === 'string',
+      );
+    } catch {
+      return [] as GuestbookEntry[];
+    }
+  };
+
+  const saveLocalEntries = (nextEntries: GuestbookEntry[]) => {
+    window.localStorage.setItem(LOCAL_ENTRIES_KEY, JSON.stringify(nextEntries));
+    setEntries(nextEntries);
+  };
+
   const loadEntries = async () => {
     if (!isApiConfigured) {
-      setEntries([]);
+      setEntries(loadLocalEntries());
       return;
     }
 
@@ -141,11 +173,6 @@ function Guestbook({ onSubmit }: GuestbookProps) {
     const trimmedMessage = message.trim();
     const trimmedViewerId = viewerId.trim();
 
-    if (!isApiConfigured) {
-      setErrorFeedback('API 주소가 설정되지 않아 저장할 수 없습니다.');
-      return;
-    }
-
     if (!trimmedViewerId) {
       setErrorFeedback('사용자 ID를 입력해 주세요.');
       return;
@@ -159,6 +186,33 @@ function Guestbook({ onSubmit }: GuestbookProps) {
     setIsSubmitting(true);
     setFeedbackMessage(null);
     setFeedbackTone(null);
+
+    if (!isApiConfigured) {
+      const localEntryId =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const localEntry: GuestbookEntry = {
+        id: localEntryId,
+        name: trimmedName,
+        message: trimmedMessage,
+        createdAt: new Date().toISOString(),
+      };
+
+      const currentEntries = loadLocalEntries();
+      const nextEntries = [localEntry, ...currentEntries].sort((a, b) =>
+        a.createdAt < b.createdAt ? 1 : -1,
+      );
+
+      saveLocalEntries(nextEntries);
+      setOwnedEntriesMap((prev) => ({ ...prev, [localEntryId]: true }));
+      onSubmit({ name: trimmedName, message: trimmedMessage });
+      setName('');
+      setMessage('');
+      setSuccessFeedback('방명록이 등록되었습니다. (로컬 저장)');
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const response = await fetch(`${apiBaseUrl}/guestbook`, {
@@ -198,7 +252,15 @@ function Guestbook({ onSubmit }: GuestbookProps) {
 
   const handleDelete = async (entryId: string) => {
     if (!isApiConfigured) {
-      setErrorFeedback('API 주소가 설정되지 않아 삭제할 수 없습니다.');
+      const nextEntries = loadLocalEntries().filter((entry) => entry.id !== entryId);
+      saveLocalEntries(nextEntries);
+      setOwnedEntriesMap((prev) => {
+        const next = { ...prev };
+        delete next[entryId];
+        return next;
+      });
+      setEditingEntryId((prev) => (prev === entryId ? null : prev));
+      setSuccessFeedback('방명록을 삭제했습니다. (로컬 저장)');
       return;
     }
 
@@ -238,8 +300,24 @@ function Guestbook({ onSubmit }: GuestbookProps) {
 
   const handleEditSave = async (entryId: string) => {
     const trimmed = editingMessage.trim();
-    if (!trimmed || !isApiConfigured) {
+    if (!trimmed) {
       setErrorFeedback('수정할 내용을 입력해 주세요.');
+      return;
+    }
+
+    if (!isApiConfigured) {
+      const nextEntries = loadLocalEntries().map((entry) =>
+        entry.id === entryId
+          ? {
+              ...entry,
+              message: trimmed,
+            }
+          : entry,
+      );
+      saveLocalEntries(nextEntries);
+      setEditingEntryId(null);
+      setEditingMessage('');
+      setSuccessFeedback('방명록을 수정했습니다. (로컬 저장)');
       return;
     }
 
@@ -272,7 +350,8 @@ function Guestbook({ onSubmit }: GuestbookProps) {
 
       {!isApiConfigured ? (
         <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          공유 방명록을 사용하려면 <code>VITE_GUESTBOOK_API_BASE_URL</code> 환경 변수를 설정해 주세요.
+          현재 로컬 저장 모드입니다. 기기/브라우저를 바꾸면 글이 공유되지 않습니다. 공유 방명록을
+          사용하려면 <code>VITE_GUESTBOOK_API_BASE_URL</code> 환경 변수를 설정해 주세요.
         </p>
       ) : null}
 
@@ -324,7 +403,7 @@ function Guestbook({ onSubmit }: GuestbookProps) {
 
         <button
           type="submit"
-          disabled={!isApiConfigured || isSubmitting}
+          disabled={isSubmitting}
           className="w-full rounded-full bg-rosewood py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? '등록 중...' : '방명록 남기기'}

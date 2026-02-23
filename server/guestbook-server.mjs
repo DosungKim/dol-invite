@@ -1,10 +1,11 @@
 import { createServer } from 'node:http';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 const PORT = Number(process.env.PORT ?? 4000);
 const DATA_FILE = resolve(process.cwd(), process.env.GUESTBOOK_DATA_FILE ?? 'data/guestbook.json');
+const ACCESS_LOG_FILE = resolve(process.cwd(), process.env.ACCESS_LOG_FILE ?? 'data/access-log.jsonl');
 const ADMIN_ID = process.env.GUESTBOOK_ADMIN_ID ?? process.env.VITE_GUESTBOOK_ADMIN_ID ?? '';
 
 const CORS_ALLOW_ORIGIN = process.env.CORS_ALLOW_ORIGIN ?? '*';
@@ -83,17 +84,74 @@ const toPublicEntry = (entry) => ({
 
 const isOwnerOrAdmin = (entry, viewerId) => Boolean(viewerId) && (entry.viewerId === viewerId || (ADMIN_ID && viewerId === ADMIN_ID));
 
+const ensureLogFile = async () => {
+  await mkdir(dirname(ACCESS_LOG_FILE), { recursive: true });
+  try {
+    await readFile(ACCESS_LOG_FILE, 'utf-8');
+  } catch {
+    await writeFile(ACCESS_LOG_FILE, '', 'utf-8');
+  }
+};
+
+const getClientIp = (req) => {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
+    return forwardedFor.split(',')[0].trim();
+  }
+
+  return req.socket.remoteAddress ?? 'unknown';
+};
+
+const appendAccessLog = async (req, url, extra = {}) => {
+  await ensureLogFile();
+  const payload = {
+    time: new Date().toISOString(),
+    ip: getClientIp(req),
+    method: req.method ?? 'UNKNOWN',
+    path: url.pathname,
+    query: url.search,
+    userAgent: typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'] : '',
+    ...extra,
+  };
+
+  await appendFile(ACCESS_LOG_FILE, `${JSON.stringify(payload)}\n`, 'utf-8');
+};
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
   const pathname = url.pathname;
 
   if (req.method === 'OPTIONS') {
+    await appendAccessLog(req, url, { event: 'preflight' });
     res.writeHead(204, {
       'Access-Control-Allow-Origin': CORS_ALLOW_ORIGIN,
       'Access-Control-Allow-Headers': 'Content-Type, x-viewer-id',
       'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
     });
     res.end();
+    return;
+  }
+
+  await appendAccessLog(req, url);
+
+  if (req.method === 'POST' && pathname === '/visit-log') {
+    const body = await parseJsonBody(req);
+    if (body === undefined) {
+      sendJson(res, 400, { error: 'invalid_json' });
+      return;
+    }
+
+    const page = typeof body?.page === 'string' ? body.page : '';
+    const referrer = typeof body?.referrer === 'string' ? body.referrer : '';
+    const language = typeof body?.language === 'string' ? body.language : '';
+
+    await appendAccessLog(req, url, {
+      event: 'visit',
+      page,
+      referrer,
+      language,
+    });
+
+    sendJson(res, 200, { ok: true });
     return;
   }
 
@@ -194,6 +252,8 @@ server.listen(PORT, () => {
   console.log(`Guestbook API listening on http://0.0.0.0:${PORT}`);
   // eslint-disable-next-line no-console
   console.log(`Data file: ${DATA_FILE}`);
+  // eslint-disable-next-line no-console
+  console.log(`Access log file: ${ACCESS_LOG_FILE}`);
   if (ADMIN_ID) {
     // eslint-disable-next-line no-console
     console.log('Admin ID is configured.');
