@@ -7,7 +7,7 @@ type GalleryProps = {
 function Gallery({ onSelectImage }: GalleryProps) {
   return (
     <section className="invitation-card animate-rise" style={{ animationDelay: '0.08s' }}>
-      <h2 className="section-title">사진</h2>
+      <h2 className="section-title">1년 동안 이렇게 자랐어요</h2>
 
       <div className="mt-4 grid grid-cols-3 gap-2">
         {inviteConfig.galleryImages.map((src, index) => (

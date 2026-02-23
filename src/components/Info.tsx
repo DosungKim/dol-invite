@@ -7,16 +7,16 @@ type InfoProps = {
 function Info({ onCopyAddress }: InfoProps) {
   return (
     <section className="invitation-card animate-rise" style={{ animationDelay: '0.04s' }}>
-      <h2 className="section-title">초대 정보</h2>
+      <h2 className="section-title">어디에서 하나요?</h2>
 
       <dl className="mt-4 space-y-3 text-sm text-rosewood/85">
         <div>
-          <dt className="text-xs uppercase tracking-[0.15em] text-rosewood/60">장소</dt>
-          <dd className="mt-1">{inviteConfig.venueName}</dd>
+          <dt className="text-xs uppercase tracking-[0.3em] text-rosewood/60">장소</dt>
+          <dd className="mt-2">{inviteConfig.venueName}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-[0.15em] text-rosewood/60">주소</dt>
-          <dd className="mt-1">{inviteConfig.address}</dd>
+          <dt className="text-xs uppercase tracking-[0.3em] text-rosewood/60">주소</dt>
+          <dd className="mt-2">{inviteConfig.address}</dd>
         </div>
       </dl>
 
