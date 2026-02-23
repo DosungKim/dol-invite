@@ -162,3 +162,23 @@ VITE_GUESTBOOK_ADMIN_ID=admin-001
 - `POST /guestbook`: `viewerId` body와 `x-viewer-id` 헤더가 모두 필요하고 서로 같아야 생성됩니다.
 - `PATCH/DELETE /guestbook/:id`: 작성자(`viewerId` 일치) 또는 운영자(`GUESTBOOK_ADMIN_ID` 일치)만 허용됩니다.
 
+## 9) 방문자 접속 로그 저장
+
+간단한 접속 로그만 저장하려면 내장 API를 실행한 뒤 프론트에 로그 API 주소를 지정하세요.
+
+`.env` 예시:
+
+```bash
+VITE_ACCESS_LOG_API_BASE_URL=http://localhost:4000
+```
+
+프론트는 페이지 진입 시 `POST /visit-log`를 호출하고, 서버는 아래 정보를 `data/access-log.jsonl`에 한 줄(JSON)씩 저장합니다.
+
+- `time` (접속 시간)
+- `ip` (클라이언트 IP, 프록시 환경이면 `x-forwarded-for` 우선)
+- `method`, `path`, `query`
+- `userAgent`
+- `page`, `referrer`, `language` (프론트 전달값)
+
+로그 파일 경로는 `ACCESS_LOG_FILE` 환경 변수로 변경할 수 있습니다.
+

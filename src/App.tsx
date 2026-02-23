@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import Footer from './components/Footer';
 import Gallery from './components/Gallery';
-import Guestbook from './components/Guestbook';
 import Hero from './components/Hero';
 import ImageModal from './components/ImageModal';
 import Info from './components/Info';
-import Location from './components/Location';
 import Toast from './components/Toast';
 import { inviteConfig } from './config';
+
+const ACCESS_LOG_API_BASE_URL = import.meta.env.VITE_ACCESS_LOG_API_BASE_URL;
 
 function App() {
   const [imageError, setImageError] = useState(false);
@@ -20,6 +20,31 @@ function App() {
     const image = new Image();
     image.src = '/baby.jpg';
     image.onerror = () => setImageError(true);
+  }, []);
+
+  useEffect(() => {
+    const baseUrl = ACCESS_LOG_API_BASE_URL?.trim().replace(/\/+$/, '');
+    if (!baseUrl) {
+      return;
+    }
+
+    const endpoint = `${baseUrl}/visit-log`;
+    const payload = {
+      page: window.location.pathname,
+      referrer: document.referrer,
+      language: navigator.language,
+    };
+
+    void fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {
+      // 방문 로그 실패는 사용자 동작에 영향 없도록 무시합니다.
+    });
   }, []);
 
   useEffect(() => {
@@ -72,11 +97,6 @@ function App() {
     }
   };
 
-  const handleSubmitGuestbook = (payload: { name: string; message: string }) => {
-    console.log('GUESTBOOK:', payload);
-    showToast('방명록이 등록되었어요.');
-  };
-
   const handleShare = async () => {
     try {
       if (navigator.share) {
@@ -100,9 +120,7 @@ function App() {
       <main className="space-y-4">
         <Hero imageError={imageError} />
         <Info onCopyAddress={handleCopyAddress} />
-        <Location />
         <Gallery onSelectImage={setSelectedImageIndex} />
-        <Guestbook onSubmit={handleSubmitGuestbook} />
       </main>
 
       <div className="pt-4">

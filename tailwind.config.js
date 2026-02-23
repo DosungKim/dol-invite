@@ -13,7 +13,8 @@ export default {
       },
       fontFamily: {
         serif: ['"Cormorant Garamond"', 'serif'],
-        sans: ['"Noto Sans KR"', 'sans-serif']
+        sans: ['"Noto Sans KR"', 'sans-serif'],
+        fredoka: ['"Fredoka"', 'sans-serif']
       }
     }
   },
