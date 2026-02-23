@@ -7,15 +7,15 @@ type InfoProps = {
 function Info({ onCopyAddress }: InfoProps) {
   return (
     <section className="invitation-card animate-rise" style={{ animationDelay: '0.04s' }}>
-      <h2 className="section-title">Invitation Info</h2>
+      <h2 className="section-title">초대 정보</h2>
 
       <dl className="mt-4 space-y-3 text-sm text-rosewood/85">
         <div>
-          <dt className="text-xs uppercase tracking-[0.15em] text-rosewood/60">Venue</dt>
+          <dt className="text-xs uppercase tracking-[0.15em] text-rosewood/60">장소</dt>
           <dd className="mt-1">{inviteConfig.venueName}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-[0.15em] text-rosewood/60">Address</dt>
+          <dt className="text-xs uppercase tracking-[0.15em] text-rosewood/60">주소</dt>
           <dd className="mt-1">{inviteConfig.address}</dd>
         </div>
       </dl>
@@ -27,14 +27,14 @@ function Info({ onCopyAddress }: InfoProps) {
           rel="noreferrer"
           className="rounded-full border border-rosewood/40 px-3 py-2 text-center text-xs text-rosewood"
         >
-          Open Kakao Map
+          지도 열기(네이버)
         </a>
         <button
           type="button"
           onClick={onCopyAddress}
           className="rounded-full bg-rosewood px-3 py-2 text-xs text-white"
         >
-          Copy Address
+          초대장 주소 복사하기
         </button>
       </div>
     </section>
